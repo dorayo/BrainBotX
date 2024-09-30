@@ -1,0 +1,9 @@
+fastapi==0.78.0
+uvicorn==0.17.6
+aiokafka==0.7.2
+mysql-connector-python==8.0.29
+python-dotenv==0.20.0
+pydantic==1.9.0
+openai==0.27.0
+redis==4.1.0
+prometheus_client==0.14.1  # 或者最新版本

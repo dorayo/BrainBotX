@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+  perception_service:
+    build: 
+      context: .
+      dockerfile: ./perception_service/Dockerfile
+    volumes:
+      # 挂载 perception_service 代码
+      - ./perception_service:/app/decision_service
+      # 挂载 shared_common 代码
+      - ./shared_common:/app/shared_common
+    networks:
+      - kafka-net
+    ports:
+      - "8001:8001"
+    depends_on:
+      - kafka
+      - mysql
+      - redis
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DB=${MYSQL_DB}
+      - KAFKA_URL=kafka:9092  # 使用服务名称
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    env_file:
+      - .env
+
+  decision_service:
+    build: 
+      context: .
+      dockerfile: ./decision_service/Dockerfile
+    volumes:
+      # 挂载 decision_service 代码
+      - ./decision_service:/app/decision_service
+      # 挂载 shared_common 代码
+      - ./shared_common:/app/shared_common
+    networks:
+      - kafka-net
+    ports:
+      - "8002:8002"
+    depends_on:
+      - kafka
+      - mysql
+      - redis
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DB=${MYSQL_DB}
+      - KAFKA_URL=kafka:9092  # 使用服务名称
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    env_file:
+      - .env
+
+  execution_service:
+    build: 
+      context: .
+      dockerfile: ./execution_service/Dockerfile
+    volumes:
+      # 挂载 execution_service 代码
+      - ./execution_service:/app/execution_service
+      # 挂载 shared_common 代码
+      - ./shared_common:/app/shared_common
+    networks:
+      - kafka-net
+    ports:
+      - "8003:8003"
+    depends_on:
+      - kafka
+      - mysql
+      - redis
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DB=${MYSQL_DB}
+      - KAFKA_URL=kafka:9092  # 使用服务名称
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    env_file:
+      - .env
+
+  feedback_service:
+    build: 
+      context: .
+      dockerfile: ./feedback_service/Dockerfile
+    volumes:
+      # 挂载 feedback_service 代码s
+      - ./feedback_service:/app/feedback_service
+      # 挂载 shared_common 代码
+      - ./shared_common:/app/shared_common
+    networks:
+      - kafka-net
+    ports:
+      - "8004:8004"
+    depends_on:
+      - kafka
+      - mysql
+      - redis
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DB=${MYSQL_DB}
+      - KAFKA_URL=kafka:9092  # 使用服务名称
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    env_file:
+      - .env
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    networks:
+      - kafka-net
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # 这里添加 ZooKeeper 地址
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    networks:
+      - kafka-net
+    ports:
+      - "2181:2181"
+
+  mysql:
+    image: mysql:8.0
+    networks:
+      - kafka-net
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:6.2
+    networks:
+      - kafka-net
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  prometheus:
+    image: prom/prometheus
+    networks:
+      - kafka-net
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    networks:
+      - kafka-net
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+networks:
+    kafka-net:
+      driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  grafana_data:

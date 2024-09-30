@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'perception_service'
+    static_configs:
+      - targets: ['perception_service:8001']
+
+  - job_name: 'decision_service'
+    static_configs:
+      - targets: ['decision_service:8002']
+
+  - job_name: 'execution_service'
+    static_configs:
+      - targets: ['execution_service:8003']
+
+  - job_name: 'feedback_service'
+    static_configs:
+      - targets: ['feedback_service:8004']
